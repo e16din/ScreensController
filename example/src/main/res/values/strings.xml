@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">ScreensController</string>
+    <string name="app_name_portrait">Portrait, ScreensController</string>
+    <string name="app_name_landscape">Landscape, ScreensController</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+</resources>
