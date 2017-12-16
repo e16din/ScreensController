@@ -7,10 +7,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Bundle;
-import android.os.Parcelable;
+import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
@@ -20,41 +23,83 @@ import com.e16din.sc.activities.ScreenViewActivity;
 import com.e16din.sc.activities.StartActivity;
 import com.e16din.sc.screens.Screen;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.e16din.sc.UtilsExtKt.INVALID_VALUE;
+
 
 public abstract class ScreensController implements IScreensController {
 
-    private static ScreensController screenController;
+    private static ScreensController sc;
     private static Screen firstScreen;
+    private static Object firstViewState;
 
-    public static void set(@NonNull ScreensController screenController, Screen firstScreen) {
-        ScreensController.screenController = screenController;
+    private static int splashDelayMs;
+    @DrawableRes
+    private static int splashRes = INVALID_VALUE;
+
+
+    public static void set(@NonNull ScreensController screenController, Screen firstScreen,
+                           Object data) {
+        ScreensController.sc = screenController;
         ScreensController.firstScreen = firstScreen;
+        ScreensController.firstViewState = data;
     }
 
-    public static ScreensController get() {
-        return screenController;
+    public static ScreensController instance() {
+        return sc;
     }
+
+    public static void setSplash(@DrawableRes int splashRes, int delayMs) {
+        ScreensController.splashRes = splashRes;
+        ScreensController.splashDelayMs = delayMs;
+    }
+
+    public static int getSplashRes() {
+        return splashRes;
+    }
+
+    public static int getSplashDelayMs() {
+        return splashDelayMs;
+    }
+
+
 
     private static final int REQ_REFRESH = 0;
 
     private ScreenViewActivity activity;
     private Screen currentScreen;
     private MenuItem.OnMenuItemClickListener onMenuItemClickListener;
-
     private boolean historyEnabled = false;
 
-    private List<String> startViewControllers = new ArrayList<>();
-    private List<Object> viewControllers = new ArrayList<>();
-    private Map<String, List<Runnable>> actionsMap = new HashMap<>(); // key is viewController class name
-    private List<Runnable> backActions = new ArrayList<>();
-    private List<Runnable> replaceBackActions = new ArrayList<>();
+    protected List<String> startViewControllers = new ArrayList<>();
+    protected List<Object> currentViewControllers = new ArrayList<>();
 
+    // key is a Screen class name, value is a ViewState object
+    private Map<String, Object> dataMap = new HashMap<>();
+
+    // key is viewController class name
+    private Map<String, List<Runnable>> actionsMap = new HashMap<>();
+    private List<Runnable> backActions = new ArrayList<>();
+    private final List<Runnable> replaceBackActions =
+            Collections.synchronizedList(new ArrayList<Runnable>());
+
+    @Nullable
+    protected Object getViewController(@NonNull String name) {
+        for (Object vc : currentViewControllers) {
+            if (Utils.getClassDefaultName(vc).equals(name)) {
+                return vc;
+            }
+        }
+        return null;
+    }
 
     @Override
     public void beforeBindActivity(ScreenViewActivity activity) {
@@ -66,10 +111,11 @@ public abstract class ScreensController implements IScreensController {
         }
 
         if (currentScreen == null) {
-            currentScreen = firstScreen();
+            currentScreen = firstScreen;
+            dataMap.put(currentScreen.getClass().getName(), firstViewState);
         }
 
-        if (currentScreen.getTheme() != Screen.INVALID_VALUE) {
+        if (currentScreen.getTheme() != INVALID_VALUE) {
             activity.setTheme(currentScreen.getTheme());
         }
 
@@ -94,17 +140,12 @@ public abstract class ScreensController implements IScreensController {
     }
 
     @Override
-    public void saveData(Object data) {
-        activity.setIntent(createIntentWithData(data));
-    }
-
-    @Override
     public void runAction(Object viewController, Runnable action) {
-        String name = getClassDefaultName(viewController);
+        String name = Utils.getClassDefaultName(viewController);
 
         if (activity != null) {
-            for (Object vc : viewControllers) {
-                if (getClassDefaultName(vc).equals(name)) {
+            for (Object vc : currentViewControllers) {
+                if (Utils.getClassDefaultName(vc).equals(name)) {
                     action.run();
                     return;
                 }
@@ -112,10 +153,6 @@ public abstract class ScreensController implements IScreensController {
         } // else {
 
         saveAction(name, action);
-    }
-
-    private String getClassDefaultName(@NonNull Object name) {
-        return name.getClass().getName().split("\\$")[0];
     }
 
     private void saveAction(String viewControllerName, Runnable action) {
@@ -132,83 +169,61 @@ public abstract class ScreensController implements IScreensController {
         return firstScreen;
     }
 
-    protected abstract IViewController[] buildViewControllers(Object data, View view, String screenName);
-
-    protected abstract Object[] buildSimpleViewControllers(Object data, View view, String screenName);
-
-    protected abstract boolean isStartOnceController(String controllerName);
 
     @Override
     public void onShow(ScreenViewActivity activity) {
         this.activity = activity;
 
-        Object data = null;
-        if (activity.getIntent().getExtras() != null) {
-            data = activity.getIntent().getExtras().get(KEY_DATA);
-        }
-
-        if (this.viewControllers != null) {
-            this.viewControllers.clear();
+        if (currentViewControllers != null) {
+            currentViewControllers.clear();
         }
         replaceBackActions.clear();
         backActions.clear();
 
-        addViewControllers(activity, data);
+        final String name = currentScreen.getClass().getName();
+        Log.i("debug", "onShow: screen name: " + name);
+        addViewControllers(activity);
 
-        stopRefreshing();
+        stopRefreshing(activity);
         startRefreshing();
     }
 
-    private void addViewControllers(Activity activity, Object data) {
+    private void addViewControllers(Activity activity) {
         final View vContent = ScreenViewUtils.getContentView(activity);
         final String screenName = currentScreen.getClass().getName();
-        final Object[] simpleViewControllers = buildSimpleViewControllers(data, vContent, screenName);
+        final Object data = dataMap.get(screenName);
 
-        if (simpleViewControllers != null) {
-            for (Object vc : simpleViewControllers) {
-                // always enabled
+        final Object[] viewControllers = buildViewControllers(screenName);
 
-                if (vc instanceof MenuItem.OnMenuItemClickListener) {
-                    onMenuItemClickListener = (MenuItem.OnMenuItemClickListener) vc;
+        for (Object vc : viewControllers) {
+            if (vc instanceof MenuItem.OnMenuItemClickListener) {
+                onMenuItemClickListener = (MenuItem.OnMenuItemClickListener) vc;
+            }
+
+            final String controllerName = Utils.getClassDefaultName(vc);
+            boolean enabled = enabled(controllerName);
+
+            if (once(controllerName)) {
+                if (!startViewControllers.contains(controllerName)) {
+                    startViewControllers.add(controllerName);
+
+                    if (enabled) {
+                        onBindViewController(vc, vContent, data);
+                    }
+                }
+
+            } else {
+                if (enabled) {
+                    onBindViewController(vc, vContent, data);
                 }
                 addViewController(vc);
-                runAllActions(vc);
             }
-        }
-
-        final IViewController[] viewControllers = buildViewControllers(data, vContent, screenName);
-
-        if (viewControllers != null) {
-            for (IViewController vc : viewControllers) {
-                boolean enabled = true;
-                if (vc instanceof IEnabled) {
-                    enabled = ((IEnabled) vc).enabled(this);
-                }
-
-                if (!enabled) continue; // else {
-
-                if (vc instanceof MenuItem.OnMenuItemClickListener) {
-                    onMenuItemClickListener = (MenuItem.OnMenuItemClickListener) vc;
-                }
-
-                final String controllerName = getClassDefaultName(vc);
-                if (isStartOnceController(controllerName)) {
-                    if (!startViewControllers.contains(controllerName)) {
-                        startViewControllers.add(controllerName);
-                        vc.onBindView(this, vContent, screenName);
-                    }
-
-                } else {
-                    vc.onBindView(this, vContent, screenName);
-                    addViewController(vc);
-                }
-                runAllActions(vc);
-            }
+            runAllActions(vc);
         }
     }
 
     private void runAllActions(Object vc) {
-        String vcName = getClassDefaultName(vc);
+        String vcName = Utils.getClassDefaultName(vc);
         List<Runnable> actions = actionsMap.get(vcName);
         if (actions != null) {
             for (Runnable action : actions) {
@@ -228,41 +243,62 @@ public abstract class ScreensController implements IScreensController {
             }
 
         } else if (backActions.size() > 0) {
-
             for (Runnable action : backActions) {
                 action.run();
             }
-
             finishScreen();
 
         } else {
-
             finishScreen();
         }
     }
 
     public void finishScreen() {
+        finishScreen(null);
+    }
+
+    public void finishScreen(@Nullable Serializable result) {
+        finishScreen(false, result);
+    }
+
+    public void finishScreen(boolean affinity, @Nullable Serializable result) {
         backActions.clear();
         replaceBackActions.clear();
         startViewControllers.clear();
+
+        dataMap.remove(currentScreen.getClass().getName());
 
         Screen prevScreen = currentScreen.getPrevScreen();
         currentScreen.setPrevScreen(null);
 
         currentScreen = prevScreen;
 
-        activity.superFinish();
+        if (result != null) {
+            setResult(result);
+        }
+
+        if (affinity) {
+            ActivityCompat.finishAffinity(activity);
+        } else {
+            activity.superFinish();
+        }
+        activity = null;
+    }
+
+    public void setResult(Serializable result) {
+        final Intent data = new Intent();
+        data.putExtra(KEY_DATA, result);
+        activity.setResult(Activity.RESULT_OK, data);
     }
 
     @Override
-    public void onHide() {
-        stopRefreshing();
-        this.activity = null;
+    public void onHide(ScreenViewActivity activity) {
+        stopRefreshing(activity);
     }
 
     private void startRefreshing() {
         if (currentScreen.getRefreshRateMs() == 0) {
-            stopRefreshing();
+            stopRefreshing(activity);
             return;
         }
 
@@ -276,8 +312,9 @@ public abstract class ScreensController implements IScreensController {
                 System.currentTimeMillis() + interval, interval, pendingIntent);
     }
 
-    private void stopRefreshing() {
-        AlarmManager alarmManager = (AlarmManager) activity.getSystemService(Context.ALARM_SERVICE);
+    private void stopRefreshing(ScreenViewActivity activity) {
+        AlarmManager alarmManager =
+                (AlarmManager) activity.getSystemService(Context.ALARM_SERVICE);
 
         Intent intent = new Intent(activity, RefreshReceiver.class);
         PendingIntent sender = PendingIntent.getBroadcast(activity, REQ_REFRESH, intent, 0);
@@ -287,17 +324,31 @@ public abstract class ScreensController implements IScreensController {
 
     @Override
     public void onRefresh() {
-        for (Object c : viewControllers) {
-            if (c instanceof IRefresh) {
+        for (Object c : currentViewControllers) {
+            if (c instanceof IOnRefresh) {
                 final Bundle extras = getActivity().getIntent().getExtras();
                 final Object data = extras != null ? extras.get(KEY_DATA) : null;
-                ((IRefresh) c).refresh(this, ScreenViewUtils.getContentView(activity), data);
+                ((IOnRefresh) c).onRefresh(this, ScreenViewUtils.getContentView(activity), data);
             }
         }
     }
 
+    public boolean clickMenuItem(MenuItem item) {
+        for (Object vc : currentViewControllers) {
+            final boolean r = onMenuItemClick(vc, item);
+            if (r) return true;
+        }
+
+        for (Object vc : startViewControllers) {
+            final boolean r = onMenuItemClick(vc, item);
+            if (r) return true;
+        }
+
+        return false;
+    }
+
     @Override
-    public boolean onMenuItemClick(MenuItem item) {
+    public boolean onMenuItemClick(@Nullable Object vc, MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
                 if (currentScreen.withBackButton()) {
@@ -310,39 +361,45 @@ public abstract class ScreensController implements IScreensController {
     }
 
     @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // override it on generated class
+    }
+
+    @Override
     public void start(Screen screen, Object data, boolean finishCurrent) {
-        screen.setPrevScreen(currentScreen.getPrevScreen());
+        start(screen, data, finishCurrent, false, 0);
+    }
+
+    public void start(Screen screen, Object data, boolean finishCurrent, boolean finishAffinity, int requestCode) {
+        screen.setPrevScreen(currentScreen);
         currentScreen = screen;
 
         Class<? extends Activity> activityClass =
                 StartActivity.getActivityCls(currentScreen.getOrientation());
 
-        Intent intent = createIntentWithData(data);
+        dataMap.put(currentScreen.getClass().getName(), data);
+
+        Intent intent = new Intent();
         if (screen.isNoHistory()) {
-            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
         }
-        intent.setClass(getContext(), activityClass);
+        if (screen.needClearTask()) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        }
 
-        getContext().startActivity(intent);
+        intent.setClass(activity, activityClass);
 
-        if (finishCurrent) {
-            getActivity().superFinish();
+        activity.startActivityForResult(intent, requestCode);
+
+        if (!finishCurrent) return; // else {
+
+        if (finishAffinity) {
+            ActivityCompat.finishAffinity(activity);
+        } else {
+            activity.superFinish();
         }
     }
 
-    @NonNull
-    private Intent createIntentWithData(Object data) {
-        final Intent intent = new Intent();
-
-        if (data != null) {
-            if (data instanceof Serializable) {
-                intent.putExtra(KEY_DATA, (Serializable) data);
-            } else if (data instanceof Parcelable) {
-                intent.putExtra(KEY_DATA, (Parcelable) data);
-            }
-        }
-        return intent;
-    }
 
     @Override
     public Context getContext() {
@@ -351,16 +408,16 @@ public abstract class ScreensController implements IScreensController {
 
     @Override
     public void addViewController(Object vc) {
-        viewControllers.add(vc);
+        currentViewControllers.add(vc);
     }
 
     @Override
-    public void removeViewController(Object dc) {
-        viewControllers.remove(dc);
+    public void removeViewController(Object vc) {
+        currentViewControllers.remove(vc);
     }
 
     protected void clearViewControllers() {
-        viewControllers.clear();
+        currentViewControllers.clear();
     }
 
 
@@ -404,16 +461,21 @@ public abstract class ScreensController implements IScreensController {
         }
     }
 
+    public void clearAllOnBackActions() {
+        backActions.clear();
+        replaceBackActions.clear();
+    }
+
     public String getString(@StringRes int stringId) {
-        return getContext().getString(stringId);
+        return activity.getString(stringId);
     }
 
     public Resources getResources() {
-        return getContext().getResources();
+        return activity.getResources();
     }
 
     public int getColor(int colorId) {
-        return ContextCompat.getColor(getContext(), colorId);
+        return ContextCompat.getColor(activity, colorId);
     }
 
     public void setOnMenuItemClickListener(MenuItem.OnMenuItemClickListener onMenuItemClickListener) {
@@ -422,5 +484,31 @@ public abstract class ScreensController implements IScreensController {
 
     public View getContentView() {
         return ScreenViewUtils.getContentView(activity);
+    }
+
+    public <T> void notifyViewController(Class<?> cls, int key, T data) {
+        final Object vc = getViewController(cls.getName());
+        //noinspection unchecked
+        ((IOnNotify<T>) vc).onNotify(key, data);
+    }
+
+    public void notifyViewController(Class<?> cls, int key) {
+        notifyViewController(cls, key, null);
+    }
+
+    public <T> void notifyViewController(Class<?> cls, T data) {
+        notifyViewController(cls, 0, data);
+    }
+
+    public void notifyViewController(Class<?> cls) {
+        notifyViewController(cls, null);
+    }
+
+    public void setCurrentViewControllers(ArrayList<Object> currentViewControllers) {
+        this.currentViewControllers = currentViewControllers;
+    }
+
+    public void setTitle(@NotNull String text) {
+        ScreenViewUtils.setToolbarTitle(activity, text);
     }
 }

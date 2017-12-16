@@ -1,7 +1,9 @@
 package com.e16din.sc;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.e16din.sc.activities.ScreenViewActivity;
 import com.e16din.sc.screens.Screen;
@@ -19,17 +21,25 @@ public interface IScreensController extends ILifecycle {
     void onBack();
 
     /**
-     * @param data parcelable (Bundle for example) or serializable object
+     * @param data model for view
      */
     void start(Screen screen, Object data, boolean finishCurrent);
 
-    void addViewController(Object dc);
+    void addViewController(Object vc);
 
-    void removeViewController(Object dc);
+    void removeViewController(Object vc);
 
-    boolean onMenuItemClick(MenuItem item);
+    boolean onMenuItemClick(Object vc, MenuItem item);
 
-    void saveData(Object data);
+    void runAction(Object vc, Runnable action);
 
-    void runAction(Object viewController, Runnable action);
+    void onActivityResult(int requestCode, int resultCode, Intent data);
+
+    Object[] buildViewControllers(String screenName);
+
+    void onBindViewController(Object vc, View view, Object state);
+
+    boolean once(String vcName);
+
+    boolean enabled(Object vc);
 }

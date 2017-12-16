@@ -4,9 +4,9 @@ import android.support.annotation.IntRange;
 
 import java.io.Serializable;
 
-public abstract class Screen implements Serializable {
+import static com.e16din.sc.UtilsExtKt.INVALID_VALUE;
 
-    public static final int INVALID_VALUE = -1;
+public abstract class Screen implements Serializable {
 
     private int layout = INVALID_VALUE;
     private int theme = INVALID_VALUE;
@@ -23,8 +23,9 @@ public abstract class Screen implements Serializable {
     private boolean withBackButton = false;
     private boolean isNoHistory = false;
 
-    private Screen prevScreen;
+    private boolean needClearTask = false;
 
+    private Screen prevScreen;
     private String linkToView;// use https://github.com/airbnb/DeepLinkDispatch
 
 
@@ -132,4 +133,13 @@ public abstract class Screen implements Serializable {
     public void setNoHistory(boolean noHistory) {
         this.isNoHistory = noHistory;
     }
+
+    public boolean needClearTask() {
+        return needClearTask;
+    }
+
+    public void setNeedClearTask(boolean needClearTask) {
+        this.needClearTask = needClearTask;
+    }
+
 }

@@ -6,6 +6,7 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.e16din.sc.ScreensController;
+import com.e16din.sc.annotations.OnBind;
 import com.e16din.sc.annotations.ViewController;
 import com.e16din.sc.example.R;
 import com.e16din.sc.example.screens.main.MainScreen;
@@ -14,9 +15,10 @@ import com.e16din.sc.example.screens.main.MainScreen;
 @ViewController(screen = MainScreen.class)
 public class MainController implements MenuItem.OnMenuItemClickListener {
 
-    private final ScreensController sc;
+    private ScreensController sc;
 
-    public MainController(ScreensController sc, final View view, Object data) {
+    @OnBind
+    public void onBindView(ScreensController sc, final View view, Object data) {
         this.sc = sc;
 
         View vFab = view.findViewById(R.id.vFab);

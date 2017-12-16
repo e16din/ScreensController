@@ -10,5 +10,9 @@ import java.lang.annotation.Target;
 public @interface ViewController {
     Class screen();
 
+    Class viewState() default Object.class;
+
     boolean startOnce() default false;
+
+    Class after() default Object.class; // require any view controller class
 }

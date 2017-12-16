@@ -10,7 +10,7 @@ public interface ILifecycle {
 
     void onShow(ScreenViewActivity activity);
 
-    void onHide();
+    void onHide(ScreenViewActivity activity);
 
     void onRefresh();
 }

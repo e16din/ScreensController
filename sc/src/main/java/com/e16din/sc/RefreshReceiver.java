@@ -6,7 +6,7 @@ import android.content.Intent;
 
 public class RefreshReceiver extends BroadcastReceiver {
 
-    private IScreensController controller = ScreensController.get();
+    private IScreensController controller = ScreensController.instance();
 
     @Override
     public void onReceive(Context context, Intent intent) {

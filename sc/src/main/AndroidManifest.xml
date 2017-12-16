@@ -13,7 +13,8 @@
 
         <activity
             android:name=".activities.StartActivity"
-            android:noHistory="true">
+            android:theme="@style/ScNoBarAppTheme">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
@@ -30,6 +31,11 @@
         <activity
             android:name=".activities.PortraitHolderActivity"
             android:screenOrientation="portrait"/>
+
+        <service
+            android:name=".services.ProgressBarService"
+            android:enabled="true"
+            android:exported="false"/>
 
     </application>
 

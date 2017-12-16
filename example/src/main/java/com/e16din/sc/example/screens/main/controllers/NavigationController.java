@@ -12,6 +12,7 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.e16din.sc.ScreensController;
+import com.e16din.sc.annotations.OnBind;
 import com.e16din.sc.annotations.ViewController;
 import com.e16din.sc.example.R;
 import com.e16din.sc.example.screens.main.MainScreen;
@@ -22,7 +23,8 @@ public class NavigationController implements NavigationView.OnNavigationItemSele
 
     private DrawerLayout vDrawer;
 
-    public NavigationController(final ScreensController sc, View view, Object data) {
+    @OnBind
+    public void onBindView(final ScreensController sc, View view, Object data) {
         Log.e("debug", "NavigationController!!!");
 
         Toolbar vToolbar = view.findViewById(R.id.vToolbar);

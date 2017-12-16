@@ -1,8 +1,10 @@
 package com.e16din.sc;
 
 
+import android.support.annotation.NonNull;
 import android.view.View;
 import android.view.ViewGroup;
+
 
 class Utils {
 
@@ -25,6 +27,10 @@ class Utils {
         } else {//if !ViewGroup
             callback.onChild(view, null, deep);
         }
+    }
+
+    public static String getClassDefaultName(@NonNull Object name) {
+        return name.getClass().getName().split("\\$")[0];
     }
 
     public interface LoopChildrenCallback {
