@@ -12,6 +12,6 @@ public class ExampleApp extends MultiDexApplication {
     @Override
     public void onCreate() {
         super.onCreate();
-        ScreensController.set(new GeneratedScreensController(), new SplashScreen(), null);
+        ScreensController.set(new GeneratedScreensController(this), new SplashScreen(), null);
     }
 }

@@ -2,13 +2,17 @@ package com.e16din.sc.processor;
 
 import com.e16din.sc.annotations.OnBackPressed;
 import com.e16din.sc.annotations.OnBind;
+import com.e16din.sc.annotations.OnHide;
 import com.e16din.sc.annotations.OnMenuItemClick;
 import com.e16din.sc.annotations.OnResult;
+import com.e16din.sc.annotations.OnShow;
 import com.e16din.sc.annotations.ViewController;
 import com.e16din.sc.processor.code.EnabledGenerator;
 import com.e16din.sc.processor.code.OnActivityResultGenerator;
 import com.e16din.sc.processor.code.OnBindViewControllerGenerator;
+import com.e16din.sc.processor.code.OnHideViewControllerGenerator;
 import com.e16din.sc.processor.code.OnMenuItemClickGenerator;
+import com.e16din.sc.processor.code.OnShowViewControllerGenerator;
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
@@ -45,6 +49,7 @@ import javax.tools.Diagnostic;
 public class ViewControllerProcessor extends AbstractProcessor {
 
     private static final ClassName CLS_INTENT = ClassName.get("android.content", "Intent");
+    private static final ClassName CLS_APPLICATION = ClassName.get("android.app", "Application");
 
     private static final ClassName CLS_SCREENS_CONTROLLER = ClassName.get("com.e16din.sc", "ScreensController");
     private static final ArrayTypeName CLS_ARRAY_OF_OBJECT = ArrayTypeName.of(Object.class);
@@ -108,6 +113,8 @@ public class ViewControllerProcessor extends AbstractProcessor {
         MethodSpec onActivityResultMethod = OnActivityResultGenerator.process(roundEnvironment);
 
         MethodSpec onBindViewControllerMethod = OnBindViewControllerGenerator.process(roundEnvironment);
+        MethodSpec onShowViewControllerMethod = OnShowViewControllerGenerator.process(roundEnvironment);
+        MethodSpec onHideViewControllerMethod = OnHideViewControllerGenerator.process(roundEnvironment);
 
         MethodSpec enabledMethod = EnabledGenerator.process(roundEnvironment);
 
@@ -145,17 +152,26 @@ public class ViewControllerProcessor extends AbstractProcessor {
                 .addCode(createIsStartOnceCode())
                 .build();
 
+        MethodSpec constructor = MethodSpec.constructorBuilder()
+                .addModifiers(Modifier.PUBLIC)
+                .addParameter(CLS_APPLICATION, "app")
+                .addStatement("super(app)")
+                .build();
+
         TypeSpec controllersBuilderClass = TypeSpec
                 .classBuilder("GeneratedScreensController")
                 .superclass(CLS_SCREENS_CONTROLLER)
                 .addModifiers(Modifier.PUBLIC)
                 .addMethod(buildViewControllersMethod)
                 .addMethod(onBindViewControllerMethod)
+                .addMethod(onShowViewControllerMethod)
+                .addMethod(onHideViewControllerMethod)
                 .addMethod(onMenuItemClickMethod)
                 .addMethod(isStartOnceControllerMethod)
                 .addMethod(enabledMethod)
                 .addMethod(onSuperResultMethod)
                 .addMethod(onActivityResultMethod)
+                .addMethod(constructor)
                 // .addField(CLS_MAP_INTEGER_BOOLEAN, "startControllersMap", Modifier.PROTECTED)
                 .build();
 
@@ -251,6 +267,8 @@ public class ViewControllerProcessor extends AbstractProcessor {
         annotations.add(OnMenuItemClick.class.getCanonicalName());
         annotations.add(OnResult.class.getCanonicalName());
         annotations.add(OnBind.class.getCanonicalName());
+        annotations.add(OnShow.class.getCanonicalName());
+        annotations.add(OnHide.class.getCanonicalName());
         annotations.add(OnBackPressed.class.getCanonicalName());
 
         return annotations;

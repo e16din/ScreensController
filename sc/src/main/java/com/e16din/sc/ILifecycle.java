@@ -1,16 +1,19 @@
 package com.e16din.sc;
 
-import com.e16din.sc.activities.ScreenViewActivity;
+import android.app.Activity;
+import android.view.View;
 
 public interface ILifecycle {
 
-    void beforeBindActivity(ScreenViewActivity activity);
+    void beforeBindActivity(Activity activity);
 
-    void onBindActivity(ScreenViewActivity activity);
+    void onBindActivity(Activity activity);
 
-    void onShow(ScreenViewActivity activity);
+    void onBindView(View view);
 
-    void onHide(ScreenViewActivity activity);
+    void onShowView(View view);
+
+    void onHideView(View view);
 
     void onRefresh();
 }

@@ -1,12 +1,40 @@
 package com.e16din.sc;
 
 
+import android.annotation.SuppressLint;
+import android.app.KeyguardManager;
+import android.content.Context;
+import android.os.PowerManager;
 import android.support.annotation.NonNull;
 import android.view.View;
 import android.view.ViewGroup;
 
 
-class Utils {
+public class Utils {
+
+    @SuppressLint("WakelockTimeout")
+    public static void disableSystemLockScreens(Context context) {
+        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK
+                | PowerManager.ACQUIRE_CAUSES_WAKEUP
+                | PowerManager.ON_AFTER_RELEASE, "INFO");
+        wl.acquire();
+        KeyguardManager km = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
+        KeyguardManager.KeyguardLock kl = km.newKeyguardLock("name");
+        kl.disableKeyguard();
+    }
+
+    public static void hideNavigation(View vDecor) {
+        vDecor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LOW_PROFILE
+                | View.SYSTEM_UI_FLAG_IMMERSIVE);
+
+        vDecor.setFitsSystemWindows(false);
+    }
 
     static void recursiveLoopChildren(View view, LoopChildrenCallback callback) {
         recursiveLoopChildren(view, callback, 0);

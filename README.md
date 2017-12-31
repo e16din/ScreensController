@@ -8,7 +8,7 @@ Android MVC framework
 public void onCreate() {
     super.onCreate();
 
-    ScreensController.set(new GeneratedScreensController(), new MainScreen(), null);
+    ScreensController.set(new GeneratedScreensController(Application.this), new MainScreen(), null);
 }
 ```
 

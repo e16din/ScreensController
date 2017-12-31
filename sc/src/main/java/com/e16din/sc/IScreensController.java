@@ -1,11 +1,10 @@
 package com.e16din.sc;
 
-import android.content.Context;
+import android.app.Activity;
 import android.content.Intent;
 import android.view.MenuItem;
 import android.view.View;
 
-import com.e16din.sc.activities.ScreenViewActivity;
 import com.e16din.sc.screens.Screen;
 
 
@@ -14,16 +13,14 @@ public interface IScreensController extends ILifecycle {
     String KEY_DATA = "com.e16din.sc.screens.data";
 
 
-    Context getContext();
-
-    ScreenViewActivity getActivity();
+    Activity getActivity();
 
     void onBack();
 
     /**
      * @param data model for view
      */
-    void start(Screen screen, Object data, boolean finishCurrent);
+    void startScreen(Screen screen, Object data, boolean finishCurrent);
 
     void addViewController(Object vc);
 
@@ -37,7 +34,11 @@ public interface IScreensController extends ILifecycle {
 
     Object[] buildViewControllers(String screenName);
 
-    void onBindViewController(Object vc, View view, Object state);
+    void onBindViewController(Object vc, View view, Object data);
+
+    void onShowViewController(Object vc);
+
+    void onHideViewController(Object vc);
 
     boolean once(String vcName);
 

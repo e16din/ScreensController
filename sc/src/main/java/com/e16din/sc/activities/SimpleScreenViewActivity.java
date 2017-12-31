@@ -6,6 +6,7 @@ public abstract class SimpleScreenViewActivity extends ScreenViewActivity {
 
     private ScreensController controller = ScreensController.instance();
 
+    @Override
     protected ScreensController controller() {
         return controller;
     }

@@ -22,12 +22,9 @@ public class MainController implements MenuItem.OnMenuItemClickListener {
         this.sc = sc;
 
         View vFab = view.findViewById(R.id.vFab);
-        vFab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Snackbar.make(v, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
+        vFab.setOnClickListener(v -> {
+            Snackbar.make(v, "Replace with your own action", Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
         });
     }
 

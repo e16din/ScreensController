@@ -6,7 +6,6 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
-import android.view.ViewGroup;
 
 final class ScreenViewUtils {
 
@@ -41,13 +40,10 @@ final class ScreenViewUtils {
         View view = getContentView(activity);
 
         final Toolbar[] vCompatToolbar = {null};
-        Utils.recursiveLoopChildren(view, new Utils.LoopChildrenCallback() {
-            @Override
-            public void onChild(View view, ViewGroup viewGroup, int deep) {
-                View v = view != null ? view : viewGroup;
-                if (v instanceof Toolbar) {
-                    vCompatToolbar[0] = (Toolbar) v;
-                }
+        Utils.recursiveLoopChildren(view, (view1, viewGroup, deep) -> {
+            View v = view1 != null ? view1 : viewGroup;
+            if (v instanceof Toolbar) {
+                vCompatToolbar[0] = (Toolbar) v;
             }
         });
 

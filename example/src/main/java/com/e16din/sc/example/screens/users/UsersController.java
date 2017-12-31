@@ -24,7 +24,7 @@ public class UsersController {
         Log.e("debug", "UsersController: !!!");
         RecyclerView vUsersList = view.findViewById(R.id.vUsersList);
         vUsersList.setHasFixedSize(true);
-        LinearLayoutManager lm = new LinearLayoutManager(sc.getContext());
+        LinearLayoutManager lm = new LinearLayoutManager(view.getContext());
         vUsersList.setLayoutManager(lm);
 
         User user1 = new User("Alex");

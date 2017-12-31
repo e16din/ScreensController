@@ -1,5 +1,12 @@
 <manifest package="com.e16din.sc"
-          xmlns:android="http://schemas.android.com/apk/res/android">
+          xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission
+        android:name="android.permission.SYSTEM_ALERT_WINDOW"
+        tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD"/>
 
     <application
         android:allowBackup="true"
@@ -20,9 +27,14 @@
 
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
         </activity>
 
         <activity android:name=".activities.ScreenHolderActivity"/>
+
+        <activity
+            android:name=".activities.LockScreenHolderActivity"
+            android:screenOrientation="landscape"/>
 
         <activity
             android:name=".activities.LandscapeHolderActivity"
@@ -34,6 +46,11 @@
 
         <service
             android:name=".services.ProgressBarService"
+            android:enabled="true"
+            android:exported="false"/>
+
+        <service
+            android:name=".services.LockScreenService"
             android:enabled="true"
             android:exported="false"/>
 

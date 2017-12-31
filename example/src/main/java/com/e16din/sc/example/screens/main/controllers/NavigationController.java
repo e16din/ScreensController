@@ -16,6 +16,10 @@ import com.e16din.sc.annotations.OnBind;
 import com.e16din.sc.annotations.ViewController;
 import com.e16din.sc.example.R;
 import com.e16din.sc.example.screens.main.MainScreen;
+import com.e16din.sc.example.screens.splash.SplashScreen;
+import com.e16din.sc.example.screens.users.UsersScreen;
+
+import static com.e16din.sc.UtilsExtKt.startScreen;
 
 
 @ViewController(screen = MainScreen.class)
@@ -40,14 +44,11 @@ public class NavigationController implements NavigationView.OnNavigationItemSele
 
         vNavigation.setNavigationItemSelectedListener(this);
 
-        sc.addOnBackAction(new Runnable() {
-            @Override
-            public void run() {
-                if (vDrawer.isDrawerOpen(GravityCompat.START)) {
-                    vDrawer.closeDrawer(GravityCompat.START);
-                } else {
-                    sc.finishScreen();
-                }
+        sc.addOnBackAction(() -> {
+            if (vDrawer.isDrawerOpen(GravityCompat.START)) {
+                vDrawer.closeDrawer(GravityCompat.START);
+            } else {
+                sc.finishScreen();
             }
         }, false);
     }
@@ -57,8 +58,10 @@ public class NavigationController implements NavigationView.OnNavigationItemSele
         // Handle navigation view item clicks here.
         switch (item.getItemId()) {
             case R.id.nav_camera:
+                startScreen(new SplashScreen(), null, true);
                 break;
             case R.id.nav_gallery:
+                startScreen(new UsersScreen(), null, false);
                 break;
             case R.id.nav_slideshow:
                 break;

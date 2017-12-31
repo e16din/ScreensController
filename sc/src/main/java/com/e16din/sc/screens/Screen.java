@@ -2,6 +2,8 @@ package com.e16din.sc.screens;
 
 import android.support.annotation.IntRange;
 
+import com.e16din.sc.R;
+
 import java.io.Serializable;
 
 import static com.e16din.sc.UtilsExtKt.INVALID_VALUE;
@@ -9,8 +11,9 @@ import static com.e16din.sc.UtilsExtKt.INVALID_VALUE;
 public abstract class Screen implements Serializable {
 
     private int layout = INVALID_VALUE;
-    private int theme = INVALID_VALUE;
+    private int windowBackgroundDrawable = INVALID_VALUE;
     private int menu = INVALID_VALUE;
+    private int theme = R.style.Theme_AppCompat_Light_NoActionBar;
 
     private String title;
 
@@ -142,4 +145,11 @@ public abstract class Screen implements Serializable {
         this.needClearTask = needClearTask;
     }
 
+    public int getWindowBackgroundDrawable() {
+        return windowBackgroundDrawable;
+    }
+
+    public void setWindowBackgroundDrawable(int windowBackgroundDrawable) {
+        this.windowBackgroundDrawable = windowBackgroundDrawable;
+    }
 }

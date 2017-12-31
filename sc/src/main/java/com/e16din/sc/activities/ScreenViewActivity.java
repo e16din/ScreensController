@@ -6,8 +6,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.e16din.sc.ScreensController;
+import com.e16din.sc.screens.LockScreen;
 
 import static com.e16din.sc.UtilsExtKt.INVALID_VALUE;
 
@@ -21,6 +23,8 @@ public abstract class ScreenViewActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        log("startScreen ScreenViewActivity");
+
         controller().beforeBindActivity(this);
         super.onCreate(savedInstanceState);
         controller().onBindActivity(this);
@@ -28,9 +32,12 @@ public abstract class ScreenViewActivity extends AppCompatActivity {
         activityName = getClass().getSimpleName();
         screenName = controller().getCurrentScreen().getClass().getSimpleName();
 
-        log("start");
+
     }
 
+    private View getContentView() {
+        return findViewById(android.R.id.content);
+    }
 
     @Override
     protected void onRestart() {
@@ -42,20 +49,22 @@ public abstract class ScreenViewActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
         log("show");
-        controller().onShow(this);
+
+        controller().onBindView(getContentView());
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         log("hide");
-        controller().onHide(this);
+        controller().onHideView(getContentView());
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         log("resume");
+        controller().onShowView(getContentView());
     }
 
     @Override
@@ -99,7 +108,10 @@ public abstract class ScreenViewActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        controller().onShow(this);
+
+        if (controller().getCurrentScreen() instanceof LockScreen) return; // else {
+
+        controller().onBindView(getContentView());
         controller().onActivityResult(requestCode, resultCode, data);
     }
 }
