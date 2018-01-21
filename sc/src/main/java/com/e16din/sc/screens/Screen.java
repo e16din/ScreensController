@@ -28,7 +28,6 @@ public abstract class Screen implements Serializable {
 
     private boolean needClearTask = false;
 
-    private Screen prevScreen;
     private String linkToView;// use https://github.com/airbnb/DeepLinkDispatch
 
 
@@ -81,14 +80,6 @@ public abstract class Screen implements Serializable {
 
     public void setLayout(int layout) {
         this.layout = layout;
-    }
-
-    public Screen getPrevScreen() {
-        return prevScreen;
-    }
-
-    public void setPrevScreen(Screen prevScreen) {
-        this.prevScreen = prevScreen;
     }
 
     public String getTitle() {

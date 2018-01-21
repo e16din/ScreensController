@@ -2,6 +2,7 @@ package com.e16din.sc;
 
 import android.app.Activity;
 import android.view.View;
+import android.view.ViewGroup;
 
 public interface ILifecycle {
 
@@ -9,7 +10,7 @@ public interface ILifecycle {
 
     void onBindActivity(Activity activity);
 
-    void onBindView(View view);
+    void onBindView(View view, ViewGroup vDecor);
 
     void onShowView(View view);
 

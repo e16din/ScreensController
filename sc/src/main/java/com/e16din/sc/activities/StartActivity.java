@@ -27,11 +27,6 @@ public class StartActivity extends AppCompatActivity {
         Log.e("debug", "startScreen StartActivity");
         Screen screen = ScreensController.firstScreen();
 
-        final int windowBackground = ScreensController.getWindowBackgroundRes();
-        if (windowBackground != INVALID_VALUE) {
-            getWindow().setBackgroundDrawableResource(windowBackground);
-        }
-
         final int delayMs = ScreensController.getSplashDelayMs();
         if (delayMs <= 0) {
             Log.i("debug", "delay: " + delayMs);
@@ -51,7 +46,7 @@ public class StartActivity extends AppCompatActivity {
     }
 
     private void startNextActivity(Screen screen) {
-        if(ScreensController.isStartOnRequest()){
+        if (ScreensController.isStartOnRequest()) {
             return;
         }
         startActivity(new Intent(this, getActivityCls(screen)));

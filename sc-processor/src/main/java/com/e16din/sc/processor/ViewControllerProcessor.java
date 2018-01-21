@@ -7,6 +7,7 @@ import com.e16din.sc.annotations.OnMenuItemClick;
 import com.e16din.sc.annotations.OnResult;
 import com.e16din.sc.annotations.OnShow;
 import com.e16din.sc.annotations.ViewController;
+import com.e16din.sc.annotations.ViewControllers;
 import com.e16din.sc.processor.code.EnabledGenerator;
 import com.e16din.sc.processor.code.OnActivityResultGenerator;
 import com.e16din.sc.processor.code.OnBindViewControllerGenerator;
@@ -24,9 +25,7 @@ import com.squareup.javapoet.TypeSpec;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -62,8 +61,7 @@ public class ViewControllerProcessor extends AbstractProcessor {
     private Filer filer;
     private Messager messager;
 
-    private Map<String, String> screensMap = new HashMap<>();// <simple controller name, screen name>
-    private Map<String, Boolean> startOnceMap = new HashMap<>();// <controller name , startOnce>
+    private ArrayList<ScreenContainer> screens = new ArrayList<>();
 
 
     @Override
@@ -76,10 +74,34 @@ public class ViewControllerProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> set, RoundEnvironment roundEnvironment) {
         Set<? extends Element> elementsAnnotatedWithViewControllers =
-                roundEnvironment.getElementsAnnotatedWith(ViewController.class);
-
+                roundEnvironment.getElementsAnnotatedWith(ViewControllers.class);
 
         for (Element element : elementsAnnotatedWithViewControllers) {
+            TypeElement typeElement = (TypeElement) element;
+            String controllerName = typeElement.getQualifiedName().toString();
+
+            print("controllerName: " + controllerName);
+
+            ViewControllers annotation = element.getAnnotation(ViewControllers.class);
+
+            try {
+                ViewController[] controllers = annotation.value();
+                print("screenName size: " + controllers.length);
+                for (ViewController controller : controllers) {
+                    print("controller: " + controller);
+                    addScreenToMap(controllerName, controller);
+                }
+
+            } catch (MirroredTypeException mte) {
+                String screenName = mte.getTypeMirror().toString();
+                print("screenName2: " + screenName);
+            }
+        }
+
+        Set<? extends Element> elementsAnnotatedWithViewController =
+                roundEnvironment.getElementsAnnotatedWith(ViewController.class);
+
+        for (Element element : elementsAnnotatedWithViewController) {
             if (element.getKind() != ElementKind.CLASS) {
                 printError("Can be applied to class.");
                 return true;
@@ -89,23 +111,7 @@ public class ViewControllerProcessor extends AbstractProcessor {
             String controllerName = typeElement.getQualifiedName().toString();
 
             ViewController annotation = element.getAnnotation(ViewController.class);
-
-            String screenName;
-            try {
-                screenName = annotation.screen().getName();
-            } catch (MirroredTypeException mte) {
-                screenName = mte.getTypeMirror().toString();
-            }
-            screensMap.put(controllerName, screenName);
-
-            boolean startOnce;
-            try {
-                startOnce = annotation.startOnce();
-            } catch (MirroredTypeException mte) {
-                startOnce = Boolean.getBoolean(mte.getTypeMirror().toString());
-            }
-
-            startOnceMap.put(controllerName, startOnce);
+            addScreenToMap(controllerName, annotation);
         }
 
         MethodSpec onMenuItemClickMethod = OnMenuItemClickGenerator.process(roundEnvironment);
@@ -186,6 +192,44 @@ public class ViewControllerProcessor extends AbstractProcessor {
         return true;
     }
 
+    private void addScreenToMap(String controllerName, ViewController annotation) {
+        String screenName;
+        try {
+            screenName = annotation.screen().getName();
+            print("screenName0: " + screenName);
+        } catch (MirroredTypeException mte) {
+            screenName = mte.getTypeMirror().toString();
+            print("screenName3: " + screenName);
+        }
+
+        boolean startOnce;
+        try {
+            startOnce = annotation.startOnce();
+            print("startOnce1: " + startOnce);
+        } catch (MirroredTypeException mte) {
+            startOnce = Boolean.getBoolean(mte.getTypeMirror().toString());
+            print("startOnce1: " + startOnce);
+        }
+
+        ScreenContainer screen = null;
+
+        for (ScreenContainer s : screens) {
+            if (s.getName().equals(screenName)) {
+                screen = s;
+                break;
+            }
+        }
+
+        ControllerContainer controller = new ControllerContainer(controllerName, startOnce);
+
+        if (screen == null) {
+            screen = new ScreenContainer(screenName, controller);
+            screens.add(screen);
+        } else {
+            screen.getControllers().add(controller);
+        }
+    }
+
     private void printError(String message) {
         messager.printMessage(Diagnostic.Kind.ERROR, message);
     }
@@ -196,31 +240,33 @@ public class ViewControllerProcessor extends AbstractProcessor {
 
 
     private String createIsStartOnceCode() {
-        String code = "switch(vcName) {";
+        StringBuilder code = new StringBuilder("switch(vcName) {");
 
-        final Set<String> startOnceControllers = getKeysByValue(startOnceMap, true);
+        final Set<String> startOnceControllers = new HashSet<>();
+        for (ScreenContainer screen : screens) {
+            for (ControllerContainer controller : screen.getControllers()) {
+                if (controller.isStartOnce()) {
+                    startOnceControllers.add(controller.getName());
+                }
+            }
+        }
         for (String name : startOnceControllers) {
-            code += "\n    case " + "\"" + name + "\": return true;";
+            code.append("\n    case " + "\"").append(name).append("\": return true;");
         }
 
-        code += "\n}\n\n" +
-                "return false;\n";
+        code.append("\n}\n\n" + "return false;\n");
 
-        return code;
+        return code.toString();
     }
 
     private String createCode() {
         StringBuilder cases = new StringBuilder();
 
-        List<String> addedScreens = new ArrayList<>();
-
         String resultType = "Object";
 
-        for (String screenName : screensMap.values()) {
-            if (addedScreens.contains(screenName)) continue; // else {
-            addedScreens.add(screenName);
-
-            Set<String> controllers = getKeysByValue(screensMap, screenName);
+        for (ScreenContainer screen : screens) {
+            String screenName = screen.getName();
+            ArrayList<ControllerContainer> controllers = screen.getControllers();
 
             cases.append("case \"")
                     .append(screenName)
@@ -228,9 +274,9 @@ public class ViewControllerProcessor extends AbstractProcessor {
                     .append(resultType)
                     .append("[]{");
 
-            for (String controllerName : controllers) {
+            for (ControllerContainer controller : controllers) {
                 cases.append("\n            new ")
-                        .append(controllerName)
+                        .append(controller.getName())
                         .append("(),");
             }
 
@@ -264,6 +310,7 @@ public class ViewControllerProcessor extends AbstractProcessor {
     public Set<String> getSupportedAnnotationTypes() {
         Set<String> annotations = new HashSet<>();
         annotations.add(ViewController.class.getCanonicalName());
+        annotations.add(ViewControllers.class.getCanonicalName());
         annotations.add(OnMenuItemClick.class.getCanonicalName());
         annotations.add(OnResult.class.getCanonicalName());
         annotations.add(OnBind.class.getCanonicalName());

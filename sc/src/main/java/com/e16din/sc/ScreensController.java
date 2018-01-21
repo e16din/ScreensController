@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.os.Bundle;
-import android.support.annotation.DrawableRes;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -23,7 +22,6 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 
-import com.e16din.sc.activities.LockScreenHolderActivity;
 import com.e16din.sc.activities.ScreenViewActivity;
 import com.e16din.sc.activities.StartActivity;
 import com.e16din.sc.screens.LockScreen;
@@ -36,10 +34,10 @@ import org.jetbrains.annotations.NotNull;
 import java.io.Serializable;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 
 import static com.e16din.sc.UtilsExtKt.INVALID_VALUE;
 import static com.e16din.topactivity.TopActivityKt.activity;
@@ -61,8 +59,7 @@ public abstract class ScreensController implements IScreensController {
     private static boolean startOnRequest;
 
     private static int splashDelayMs = 0;
-    @DrawableRes
-    private static int windowBackgroundRes = INVALID_VALUE;
+
     @LayoutRes
     private static int splashLayoutRes = INVALID_VALUE;
 
@@ -96,22 +93,17 @@ public abstract class ScreensController implements IScreensController {
         ActivityCompat.finishAffinity(activity);
     }
 
-    public static void setSplash(@LayoutRes int layoutRes, @DrawableRes int windowBackground, int delayMs) {
+    private static void setSplash(@LayoutRes int layoutRes, int delayMs) {
         ScreensController.splashLayoutRes = layoutRes;
-        ScreensController.windowBackgroundRes = windowBackground;
         ScreensController.splashDelayMs = delayMs;
     }
 
-    public static void setSplashDrawable(@DrawableRes int windowBackground, int delayMs) {
-        setSplash(INVALID_VALUE, windowBackground, delayMs);
+    public static void setSplashDelay(int delayMs) {
+        setSplash(INVALID_VALUE, delayMs);
     }
 
     public static void setSplashLayout(@LayoutRes int layoutRes, int delayMs) {
-        setSplash(layoutRes, INVALID_VALUE, delayMs);
-    }
-
-    public static int getWindowBackgroundRes() {
-        return windowBackgroundRes;
+        setSplash(layoutRes, delayMs);
     }
 
     public static int getSplashDelayMs() {
@@ -119,14 +111,10 @@ public abstract class ScreensController implements IScreensController {
     }
 
 
-    private static final int REQ_REFRESH = 0;
-
-    //    private WeakReference<View> contentViewLink;
-//    private WeakReference<ViewGroup> decorViewLink; // for lock screen service
     private WeakReference<View> contentViewLink;
     private WeakReference<ViewGroup> decorViewLink; // for lock screen service
 
-    private Screen currentScreen;
+    private Stack<Screen> screenStack = new Stack<>();
     private MenuItem.OnMenuItemClickListener onMenuItemClickListener;
     private boolean historyEnabled = false;
 
@@ -139,13 +127,13 @@ public abstract class ScreensController implements IScreensController {
     // key is viewController class name
     private Map<String, List<Runnable>> actionsMap = new HashMap<>();
     private List<Runnable> backActions = new ArrayList<>();
-    private final List<Runnable> replaceBackActions =
-            Collections.synchronizedList(new ArrayList<Runnable>());
+    private final List<Runnable> replaceBackActions = new ArrayList<>();
 
 
     public static int getSplashLayoutRes() {
         return splashLayoutRes;
     }
+
 
     @Nullable
     protected Object getViewController(@NonNull String name) {
@@ -161,6 +149,7 @@ public abstract class ScreensController implements IScreensController {
     public void beforeBindActivity(Activity activity) {
         bindScreen();
 
+        final Screen currentScreen = screenStack.peek();
         if (currentScreen.getTheme() != INVALID_VALUE) {
             activity.setTheme(currentScreen.getTheme());
         }
@@ -180,24 +169,27 @@ public abstract class ScreensController implements IScreensController {
         if (isHistoryEnabled()) {
             String lastScreenName = null;//todo: add logic
             if (lastScreenName != null) {
-                currentScreen = null;// todo: deserialize screen from json
+                screenStack.pop();
             }
         }
 
-        if (currentScreen == null) {
-            currentScreen = firstScreen;
+        if (screenStack.isEmpty()) {
+            screenStack.push(firstScreen);
+            final Screen currentScreen = screenStack.peek();
             dataMap.put(currentScreen.getClass().getName(), firstData);
         }
     }
 
     public void onBindLockScreenService(LockScreenService service) {
         bindScreen();
+        final Screen currentScreen = screenStack.peek();
         service.setContentView(currentScreen.getLayout());
         service.setTheme(currentScreen.getTheme());
     }
 
     @Override
     public void onBindActivity(Activity activity) {
+        final Screen currentScreen = screenStack.peek();
         activity.setContentView(currentScreen.getLayout());
 
         ScreenViewUtils.initToolbar(activity, currentScreen.withBackButton());
@@ -234,7 +226,9 @@ public abstract class ScreensController implements IScreensController {
     }
 
 
-    public void bindView(View view, ViewGroup vLockContainer) {
+    private void bindView(View view, ViewGroup vLockContainer) {
+        final Screen currentScreen = screenStack.peek();
+
         if (currentScreen instanceof LockScreen) {
             decorViewLink = new WeakReference<>(vLockContainer);
         }
@@ -253,12 +247,13 @@ public abstract class ScreensController implements IScreensController {
     }
 
     @Override
-    public void onBindView(View view) {
-        bindView(view, null);
+    public void onBindView(View view, ViewGroup vDecor) {
+        bindView(view, vDecor);
     }
 
     @Override
     public void onShowView(View view) {
+        final Screen currentScreen = screenStack.peek();
         final String name = currentScreen.getClass().getName();
         Log.i("debug", "onShowView: screen name: " + name);
         showViewControllers();
@@ -278,8 +273,9 @@ public abstract class ScreensController implements IScreensController {
     }
 
     private void addViewControllers(View vContent, int method) {
+        final Screen currentScreen = screenStack.peek();
         final String screenName = currentScreen.getClass().getName();
-        final Object data = dataMap.get(screenName);
+        final Object data = getData(screenName);
 
         final Object[] viewControllers = buildViewControllers(screenName);
 
@@ -323,6 +319,10 @@ public abstract class ScreensController implements IScreensController {
             }
             runAllActions(vc);
         }
+    }
+
+    private Object getData(String screenName) {
+        return dataMap.get(screenName);
     }
 
     private void runAllActions(Object vc) {
@@ -369,17 +369,26 @@ public abstract class ScreensController implements IScreensController {
         replaceBackActions.clear();
         startViewControllers.clear();
 
-        dataMap.remove(currentScreen.getClass().getName());
-
-        Screen prevScreen = currentScreen.getPrevScreen();
-        currentScreen.setPrevScreen(null);
-
-        currentScreen = prevScreen;
+        final Screen currentScreen = screenStack.pop();
 
         if (result != null) {
             setResult(result);
         }
 
+        if (screenStack.size() > 0) {
+            final Screen prevScreen = screenStack.peek();
+            if (prevScreen instanceof LockScreen) {
+                final String screenName = prevScreen.getClass().getName();
+                final Object data = getData(screenName);
+                dataMap.remove(currentScreen.getClass().getName());
+
+                startScreen(prevScreen, data, true);
+                screenStack.pop();
+                return;
+            }
+        } // else if (!LockScreen) {
+
+        dataMap.remove(currentScreen.getClass().getName());
         contentViewLink = null;
 
         final Activity activity = getActivity();
@@ -393,10 +402,6 @@ public abstract class ScreensController implements IScreensController {
             else
                 activity.finish();
         }
-
-        if (currentScreen instanceof LockScreen) {
-            hideLockScreen();
-        }
     }
 
     public void setResult(Serializable result) {// check this on lock screen
@@ -407,6 +412,7 @@ public abstract class ScreensController implements IScreensController {
 
     @Override
     public void onHideView(View view) {
+        final Screen currentScreen = screenStack.peek();
         Log.i("debug", "onHideView:");
         if (currentScreen != null) {
             final String name = currentScreen.getClass().getName();
@@ -459,6 +465,7 @@ public abstract class ScreensController implements IScreensController {
     public boolean onMenuItemClick(@Nullable Object vc, MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
+                final Screen currentScreen = screenStack.peek();
                 if (currentScreen.withBackButton()) {
                     getActivity().onBackPressed();
                 }
@@ -479,26 +486,31 @@ public abstract class ScreensController implements IScreensController {
     }
 
     public void startScreen(Screen screen, Object data, boolean finishCurrent, boolean finishAffinity, int requestCode) {
-        screen.setPrevScreen(currentScreen);
-        currentScreen = screen;
-        dataMap.put(currentScreen.getClass().getName(), data);
+        final Screen currentScreen = screenStack.peek();
 
-        if (screen instanceof LockScreen) {
+        final Screen nextScreen = screenStack.push(screen);
+        dataMap.put(nextScreen.getClass().getName(), data);
+
+        if (nextScreen instanceof LockScreen) {
+            final ViewGroup decorView = getDecorView();
+
             @SuppressLint("RestrictedApi")
-            ContextThemeWrapper contextThemeWrapper = new ContextThemeWrapper(getDecorView().getContext(), screen.getTheme());
-            View newView = LayoutInflater.from(contextThemeWrapper).inflate(screen.getLayout(), getDecorView(), false);
+            ContextThemeWrapper contextThemeWrapper = new ContextThemeWrapper(decorView.getContext(), nextScreen.getTheme());
+            View newView = LayoutInflater.from(contextThemeWrapper).inflate(nextScreen.getLayout(), decorView, false);
 
             hideLockScreen();
+            decorView.addView(newView, LockScreenService.params);
 
-            getDecorView().addView(newView, LockScreenService.params);
-
-
-            bindView(newView, getDecorView());
+            bindView(newView, decorView);
             onShowView(null);
 
             return;
         } // else {
 
+        if (currentScreen instanceof LockScreen) {
+            hideLockScreen();
+            unlockScreen();
+        }
 
         Intent intent = new Intent();
         if (screen.isNoHistory()) {
@@ -511,25 +523,13 @@ public abstract class ScreensController implements IScreensController {
         final Activity activity = getActivity();
 
         Class<? extends Activity> activityClass =
-                StartActivity.getActivityCls(currentScreen);
+                StartActivity.getActivityCls(nextScreen);
         intent.setClass(activity, activityClass);
 
         activity.startActivityForResult(intent, requestCode);
 
-
-        if (!finishCurrent) return; // else {
-
-        if (finishAffinity) {
-            ActivityCompat.finishAffinity(activity);
-        } else {
-            if (activity instanceof ScreenViewActivity)
-                ((ScreenViewActivity) activity).superFinish();
-            else
-                activity.finish();
-        }
-
-        if (activity instanceof LockScreenHolderActivity) {
-            hideLockScreen();
+        if (finishCurrent) {
+            finishScreen();
         }
     }
 
@@ -553,12 +553,8 @@ public abstract class ScreensController implements IScreensController {
         currentViewControllers.clear();
     }
 
-    protected void setCurrentScreen(Screen currentScreen) {
-        this.currentScreen = currentScreen;
-    }
-
     public Screen getCurrentScreen() {
-        return currentScreen;
+        return screenStack.empty() ? null : screenStack.peek();
     }
 
 
@@ -589,9 +585,13 @@ public abstract class ScreensController implements IScreensController {
     }
 
     public void unlockScreenAndExit() {
+        unlockScreen();
+        System.exit(0);
+    }
+
+    private void unlockScreen() {
         final Context context = getContentView().getContext().getApplicationContext();
         context.stopService(new Intent(context, LockScreenService.class));
-        System.exit(0);
     }
 
     @Override
@@ -647,5 +647,14 @@ public abstract class ScreensController implements IScreensController {
 
     public void setTitle(@NotNull String text) {
         ScreenViewUtils.setToolbarTitle(getActivity(), text);
+    }
+
+    public Stack<Screen> getScreenStack() {
+        return screenStack;
+    }
+
+    public Object getCurrentData() {
+        final String screenName = getCurrentScreen().getClass().getName();
+        return getData(screenName);
     }
 }

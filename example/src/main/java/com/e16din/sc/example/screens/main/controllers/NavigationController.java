@@ -16,7 +16,6 @@ import com.e16din.sc.annotations.OnBind;
 import com.e16din.sc.annotations.ViewController;
 import com.e16din.sc.example.R;
 import com.e16din.sc.example.screens.main.MainScreen;
-import com.e16din.sc.example.screens.splash.SplashScreen;
 import com.e16din.sc.example.screens.users.UsersScreen;
 
 import static com.e16din.sc.UtilsExtKt.startScreen;
@@ -58,7 +57,7 @@ public class NavigationController implements NavigationView.OnNavigationItemSele
         // Handle navigation view item clicks here.
         switch (item.getItemId()) {
             case R.id.nav_camera:
-                startScreen(new SplashScreen(), null, true);
+                startScreen(new MainScreen(), null, true);
                 break;
             case R.id.nav_gallery:
                 startScreen(new UsersScreen(), null, false);

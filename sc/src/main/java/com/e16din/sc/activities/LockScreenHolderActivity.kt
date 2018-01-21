@@ -8,8 +8,9 @@ import android.os.Bundle
 import android.provider.Settings
 import android.support.annotation.RequiresApi
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
 import android.view.WindowManager
+import com.e16din.humanoid.logD
+import com.e16din.humanoid.logI
 import com.e16din.sc.INVALID_VALUE
 import com.e16din.sc.ScreensController
 import com.e16din.sc.screens.LockScreen
@@ -31,7 +32,7 @@ class LockScreenHolderActivity : AppCompatActivity() {
     //override fun controller() = ScreensController.instance()!!
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.d("debug", "startScreen LockScreenHolderActivity")
+        "startScreen LockScreenHolderActivity".logI()
 
         serviceIntent = Intent(applicationContext, LockScreenService::class.java)
 
@@ -62,7 +63,7 @@ class LockScreenHolderActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        Log.d("debug", "hide stub activity")
+        "hide stub activity".logD()
     }
 
     fun stopService() {

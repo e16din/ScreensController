@@ -20,7 +20,7 @@
 
         <activity
             android:name=".activities.StartActivity"
-            android:theme="@style/ScNoBarAppTheme">
+            android:theme="@style/ScSplashTheme">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

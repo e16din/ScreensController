@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="ScNoBarAppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="ScSplashTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:windowBackground">@drawable/splash</item>
-        <!--<item name="colorBackground">#333</item>-->
     </style>
 </resources>
