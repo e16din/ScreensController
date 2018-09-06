@@ -1,3 +1,5 @@
+# @Deprecated
+
 # ScreensController
 Android MVC framework
 
