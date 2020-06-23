@@ -1,4 +1,4 @@
-package com.e16din.sc.activities
+package com.e16din.sc_bosscontrol.activities
 
 import android.Manifest
 import android.content.Intent
@@ -6,14 +6,14 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.support.annotation.RequiresApi
-import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.WindowManager
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
 import com.e16din.sc.INVALID_VALUE
 import com.e16din.sc.ScreensController
 import com.e16din.sc.screens.LockScreen
-import com.e16din.sc.services.LockScreenService
+import com.e16din.sc_bosscontrol.services.LockScreenService
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionDeniedResponse
@@ -31,7 +31,7 @@ class LockScreenHolderActivity : AppCompatActivity() {
     //override fun controller() = ScreensController.instance()!!
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.d("debug", "startScreen LockScreenHolderActivity")
+        Log.d("debug_sc", "startScreen LockScreenHolderActivity")
 
         serviceIntent = Intent(applicationContext, LockScreenService::class.java)
 
@@ -41,7 +41,7 @@ class LockScreenHolderActivity : AppCompatActivity() {
         val sc = ScreensController.instance()
         var screen = sc.currentScreen as LockScreen?
         if (screen == null) {
-            screen = ScreensController.getFirstScreen() as LockScreen
+            screen = ScreensController.firstScreen as LockScreen
         }
 
         if (screen.windowBackgroundDrawable != INVALID_VALUE) {
@@ -62,7 +62,7 @@ class LockScreenHolderActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        Log.d("debug", "hide stub activity")
+        Log.d("debug_sc", "hide stub activity")
     }
 
     fun stopService() {
@@ -78,12 +78,7 @@ class LockScreenHolderActivity : AppCompatActivity() {
                     }
 
                     override fun onPermissionDenied(response: PermissionDeniedResponse) {
-                        if (Settings.canDrawOverlays(this@LockScreenHolderActivity)) {
-                            startLockService()
-
-                        } else {
-                            requestOverlayPermission()
-                        }
+                        startLockService()
                     }
 
                     override fun onPermissionRationaleShouldBeShown(permission: PermissionRequest,
@@ -109,9 +104,7 @@ class LockScreenHolderActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode == REQ_REQUEST_PERMISSION) {
-            if (Settings.canDrawOverlays(this)) {
-                startLockService()
-            }
+            startLockService()
         }
     }
 

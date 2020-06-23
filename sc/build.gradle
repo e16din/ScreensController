@@ -1,17 +1,23 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
 
 android {
-    compileSdkVersion 27
-    buildToolsVersion "27.0.3"
+    compileSdkVersion 28
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 27
+        targetSdkVersion 28
         versionCode 1
-        versionName "0.3"
+        versionName "0.4.1"
         multiDexEnabled true
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        javaCompileOptions {
+            annotationProcessorOptions {
+                includeCompileClasspath true
+            }
+        }
     }
 
     buildTypes {
@@ -20,10 +26,16 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
     compileOptions {
-        targetCompatibility 1.8
-        sourceCompatibility 1.8
+        sourceCompatibility = '1.8'
+        targetCompatibility = '1.8'
+    }
+}
+
+kapt {
+    generateStubs = true
+    javacOptions {
+        option("-Xmaxerrs", 500)
     }
 }
 
@@ -34,29 +46,19 @@ repositories {
 }
 
 dependencies {
-    api project(':sc-annotations')
+    implementation project(':sc-annotations')
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation "com.android.support:appcompat-v7:$ver_support"
+    implementation 'androidx.appcompat:appcompat:1.0.2'
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.1'
 
-    annotationProcessor project(":sc-processor")
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+    kapt project(":sc-processor")
+//    compileOnly project(":sc-processor")
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
 
     implementation 'com.karumi:dexter:4.2.0'
-    implementation 'com.github.e16din:TopActivity:1.0.3'
-}
-
-configurations.all {
-    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-        def requested = details.requested
-        if (requested.group == 'com.android.support') {
-            if (!requested.name.startsWith("multidex")) {
-                details.useVersion "$ver_support"
-            }
-        }
-
-    }
+    implementation 'com.github.e16din:DataManager:0.4.2'
+    implementation 'com.github.e16din:TopActivity:1.0.4'
 }

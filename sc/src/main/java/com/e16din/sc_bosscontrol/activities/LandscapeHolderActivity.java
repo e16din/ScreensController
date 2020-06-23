@@ -1,4 +1,4 @@
-package com.e16din.sc.activities;
+package com.e16din.sc_bosscontrol.activities;
 
 
 public class LandscapeHolderActivity extends SimpleScreenViewActivity {

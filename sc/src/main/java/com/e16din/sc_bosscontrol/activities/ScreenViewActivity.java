@@ -1,12 +1,13 @@
-package com.e16din.sc.activities;
+package com.e16din.sc_bosscontrol.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 
 import com.e16din.sc.ScreensController;
 import com.e16din.sc.screens.LockScreen;
@@ -31,8 +32,6 @@ public abstract class ScreenViewActivity extends AppCompatActivity {
 
         activityName = getClass().getSimpleName();
         screenName = controller().getCurrentScreen().getClass().getSimpleName();
-
-
     }
 
     private View getContentView() {
@@ -42,7 +41,7 @@ public abstract class ScreenViewActivity extends AppCompatActivity {
     @Override
     protected void onRestart() {
         super.onRestart();
-        // log("restart");
+        log("restart");
     }
 
     @Override
@@ -50,7 +49,7 @@ public abstract class ScreenViewActivity extends AppCompatActivity {
         super.onStart();
         log("show");
 
-        controller().onBindView(getContentView());
+        controller().onBindView(getContentView(), (ViewGroup) getWindow().getDecorView());
     }
 
     @Override
@@ -109,9 +108,10 @@ public abstract class ScreenViewActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (controller().getCurrentScreen() instanceof LockScreen) return; // else {
+        final ScreensController controller = controller();
+        if (controller.getCurrentScreen() instanceof LockScreen) return; // else {
 
-        controller().onBindView(getContentView());
-        controller().onActivityResult(requestCode, resultCode, data);
+        controller.onBindView(getContentView(),(ViewGroup) getWindow().getDecorView());
+        controller.onActivityResult(requestCode, resultCode, data);
     }
 }

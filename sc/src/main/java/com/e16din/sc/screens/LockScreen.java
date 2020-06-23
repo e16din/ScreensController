@@ -1,6 +1,6 @@
 package com.e16din.sc.screens;
 
-import com.e16din.sc.R;
+import com.e16din.sc_bosscontrol.R;
 
 import static com.e16din.sc.UtilsExtKt.INVALID_VALUE;
 

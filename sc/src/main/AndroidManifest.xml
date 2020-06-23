@@ -1,4 +1,4 @@
-<manifest package="com.e16din.sc"
+<manifest package="com.e16din.sc_bosscontrol"
           xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
 
@@ -13,14 +13,10 @@
         android:label="@string/app_name"
         android:supportsRtl="true">
 
-        <receiver
-            android:name=".RefreshReceiver"
-            android:enabled="true"
-            android:exported="false"/>
-
         <activity
-            android:name=".activities.StartActivity"
-            android:theme="@style/ScNoBarAppTheme">
+            android:name="com.e16din.sc_bosscontrol.activities.StartActivity"
+            android:exported="true"
+            android:theme="@style/ScSplashTheme">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -30,27 +26,27 @@
 
         </activity>
 
-        <activity android:name=".activities.ScreenHolderActivity"/>
+        <activity android:name="com.e16din.sc_bosscontrol.activities.ScreenHolderActivity"/>
 
         <activity
-            android:name=".activities.LockScreenHolderActivity"
+            android:name="com.e16din.sc_bosscontrol.activities.LockScreenHolderActivity"
             android:screenOrientation="landscape"/>
 
         <activity
-            android:name=".activities.LandscapeHolderActivity"
+            android:name="com.e16din.sc_bosscontrol.activities.LandscapeHolderActivity"
             android:screenOrientation="landscape"/>
 
         <activity
-            android:name=".activities.PortraitHolderActivity"
+            android:name="com.e16din.sc_bosscontrol.activities.PortraitHolderActivity"
             android:screenOrientation="portrait"/>
 
         <service
-            android:name=".services.ProgressBarService"
+            android:name="com.e16din.sc_bosscontrol.services.ProgressBarService"
             android:enabled="true"
             android:exported="false"/>
 
         <service
-            android:name=".services.LockScreenService"
+            android:name="com.e16din.sc_bosscontrol.services.LockScreenService"
             android:enabled="true"
             android:exported="false"/>
 

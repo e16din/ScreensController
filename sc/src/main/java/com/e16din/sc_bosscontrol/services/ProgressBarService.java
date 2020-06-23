@@ -1,4 +1,4 @@
-package com.e16din.sc.services;
+package com.e16din.sc_bosscontrol.services;
 
 import android.app.Service;
 import android.content.Intent;
@@ -6,7 +6,6 @@ import android.content.pm.ActivityInfo;
 import android.graphics.PixelFormat;
 import android.os.Debug;
 import android.os.IBinder;
-import android.support.annotation.Nullable;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
@@ -14,7 +13,9 @@ import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 
-import com.e16din.sc.R;
+import com.e16din.sc_bosscontrol.R;
+
+import androidx.annotation.Nullable;
 
 
 public class ProgressBarService extends Service {
