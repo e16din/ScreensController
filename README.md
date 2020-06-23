@@ -1,7 +1,10 @@
 # @Deprecated
 
 # ScreensController
-Android MVC framework
+ScreensController - MVC-framework to use only Services instead of Activities.
+
+It is useful when you need to create one application for a device and prevent exit from the app.
+
 
 ## Init
 ```java
@@ -16,7 +19,7 @@ public void onCreate() {
 
 ## Using
 
-### M[Screen] V[Activity] C[ScreensController]
+### Screen Model
 ```kotlin
 class MainScreen : Screen() {
     init {
@@ -26,14 +29,35 @@ class MainScreen : Screen() {
 }
 ```
 
-### M[Any] V[View] C[ViewController]
+### One Screen - One Controller
 ```kotlin
 @ViewController(screen = MainScreen::class)
-class GameController {
+class MainController {
     @OnBind
     fun onBindView(sc: ScreensController, v: View, data: Any?) {
         // do something
     }
+}
+```
+
+### One Controller - Many Screens
+```kotlin
+@ViewController(screen = EmployeeScreen::class)
+@ViewController(screen = ConfirmScreen::class)
+@ViewController(screen = CardRegistrationScreen::class)
+@ViewController(screen = FingerRegistrationScreen::class)
+class FingerScannerController {
+
+    @OnBind
+    fun onBindView(sc: ScreensController, view: View, data: Any?) {
+        // do something
+    }
+
+    @OnHide
+    fun onHide() {
+        // do something
+    }
+
 }
 ```
 
